@@ -2,16 +2,18 @@ module Clock(
 	CLK50,
 	ratio,
 	isNormalSpeed,
+	isSlow,
 	interp,
 	pause,
 	isRecord,
 	clkOut
 );
-	input clk50;
+	input CLK50;
 	input [2:0] ratio;
 	input isNormalSpeed;
 	input interp;
 	input isRecord;
+	input isSlow;
 	input pause;
 	output clkOut;
 
@@ -20,9 +22,9 @@ module Clock(
 	reg slowClock, slowClock_next;
 	reg clkOut_tmp;
 
-	always @(posedge clk50) begin
+	always @(posedge CLK50) begin
 		counter <= counter + 2'b1;
-		if (isNormalSpeed | isRecord | ~interp) begin
+		if (isSlow | isNormalSpeed | isRecord | ~interp) begin
 			clkOut_tmp = counter[1];
 		end else begin
 			clkOut_tmp = slowClock;

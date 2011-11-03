@@ -5,7 +5,7 @@ module State(
 );
 	input CLK50;
 	input KEY;
-	output reg pause;
+	output reg state;
 	reg [2:0] counter;
 
 	always @(posedge CLK50) begin
@@ -16,9 +16,9 @@ module State(
 		end
 
 		if (KEY) begin
-			counter = counter + (&counter? 3'h0: 3'h1);
-		end else begin
 			counter = 3'h0;
+		end else begin
+			counter = counter + (&counter? 3'h0: 3'h1);
 		end
 	end
 endmodule
