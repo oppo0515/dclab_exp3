@@ -22,6 +22,7 @@ module Main(
 	SRAM_LB,
 	SRAM_CE,
 	SRAM_DATA,
+	// seven seg.
 	IS_PAUSE,
 	RATIO,
 	IS_REC,
@@ -82,9 +83,9 @@ module Main(
 	assign IS_REC = (RECORD_SW? 7'h12: 7'h47);
 	assign IS_SLOW = (IS_SLOW_SW? 7'h12: 7'h0e);
 	assign HEX1 = 7'h7f;
-	assign HEX0 = 7'h7f;
+	// interploate
+	assign HEX0 = (INTERP_SW? 7'h79: 7'h40);
 	wire [3:0] ratio_bin;
-	assign ratio_bin = 
-	(NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
+	assign ratio_bin = (NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
 	SevenSeg ss1(.in(ratio_bin), .out(RATIO));
 endmodule

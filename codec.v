@@ -7,10 +7,10 @@ module codec(
 	stop,			//control
 	addr_fr_sram,   //sram
 	data_fr_sram,   //sram
-	read            //sram
+	read,           //sram
 	AUD_ADCLRCK,    //audio
 	AUD_ADCDAT,     //audio
-	recode,         //control
+	record,         //control
 	stop,			//control
 	addr_to_sram,   //sram
 	data_to_sram,   //sram
@@ -29,15 +29,15 @@ module codec(
 	output	[17:0]	addr_to_sram;
 	output	[15:0]	data_to_sram;
 	output			write; //stop_out
-
+	
+	reg 		AUD_DACDAT;
 	reg	[17:0]	addr,addr_next, addr_to_sram;
 	reg [15:0]	data_write, data_write_next, data_to_sram;
 	reg [4:0]	counter, counter_next;
 	reg 		ADCLRCK_prev, write;
 	
-	reg	[17:0]	addr, addr_next, addr_fr_sram;
-	reg	[15:0]	data_read, data_read_next, data_fr_sram;
-	reg	[4:0]	counter, counter_next;
+	reg	[17:0]	addr_fr_sram;
+	reg	[15:0]	data_read, data_read_next;
 	reg			DACLRCK_prev, read;
 
 	always@(*)begin    
@@ -56,7 +56,7 @@ module codec(
 			counter_next = 5'b0;
 			data_read_next = 18'b0;
 		end
-		else if(record)// normal record -- four-state ADCLRCK 0-1 1-1 (1-0 0-0)
+		else if(record) begin// record  mode -- four-state ADCLRCK 0-1 1-1 (1-0 0-0)
 			if(ADCLRCK_prev == 1'b0 && AUD_ADCLRCK == 1'b1) begin
 				if(&addr)begin                  //first data of sram will be empty
 					addr_next = addr;          //and after the last data of sram ,the recording will be stoped***shoulb be fixed!
@@ -83,7 +83,7 @@ module codec(
 				end
 			end
 		end
-		else begin
+		else begin //play mode -- four-state ADCLRCK 1-0 0-0 0-1 1-1
 			if(DACLRCK_prev == 1'b1 && AUD_DACLRCK == 1'b0) begin
 				read = 1'b1;
 				addr_fr_sram = addr;
@@ -145,10 +145,10 @@ module codec(
 	always@(posedge AUD_BCLK)begin
 		ADCLRCK_prev <= AUD_ADCLRCK;
 		data_write <= data_write_next;
-		DACLRCK_prev <= DAC_ADCLRCK;
+		DACLRCK_prev <= AUD_DACLRCK;
 		addr <= addr_next;
 		data_read <= data_read_next;
-		count <= counter_next;
+		counter <= counter_next;
 	end
 
 
