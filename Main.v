@@ -23,12 +23,13 @@ module Main(
 	SRAM_CE,
 	SRAM_DATA,
 	// seven seg.
-	IS_PAUSE,
-	RATIO,
-	IS_REC,
-	IS_SLOW,
+	HEX0,
 	HEX1,
-	HEX0
+	HEX2,
+	HEX3,
+	HEX4,
+	HEX5,
+	HEX6
 );
 	input CLK50;
 	input PAUSE_KEY;
@@ -53,16 +54,13 @@ module Main(
 	output SRAM_UB;
 	output SRAM_LB;
 	output SRAM_CE;
-	output [6:0] IS_PAUSE;
-	output [6:0] RATIO;
-	output [6:0] IS_REC;
-	output [6:0] IS_SLOW;
-	output [6:0] HEX1;
-	output [6:0] HEX0;
+	output [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6;
 
 	inout [15:0] SRAM_DATA;
 
 	wire pause;
+	wire ratio = (NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
+
 	State s1(
 		.CLK50(CLK50),
 		.KEY(PAUSE_KEY),
@@ -79,13 +77,41 @@ module Main(
 		.isRecord(RECORD_SW),
 		.clkOut(MCLK)
 	);
-	assign IS_PAUSE = (pause? 7'hc: 7'h7f);
-	assign IS_REC = (RECORD_SW? 7'h12: 7'h47);
-	assign IS_SLOW = (IS_SLOW_SW? 7'h12: 7'h0e);
-	assign HEX1 = 7'h7f;
-	// interploate
-	assign HEX0 = (INTERP_SW? 7'h79: 7'h40);
-	wire [3:0] ratio_bin;
-	assign ratio_bin = (NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
-	SevenSeg ss1(.in(ratio_bin), .out(RATIO));
+
+	Codec cd1(
+		// TODO
+		AUD_BCLK,       //audio
+		AUD_DACLRCK,    //audio
+		AUD_DACDAT,     //audio
+		fast,           //control
+		rate,           //control
+		stop,			//control
+		addr_fr_sram,   //sram
+		data_fr_sram,   //sram
+		read,           //sram
+		AUD_ADCLRCK,    //audio
+		AUD_ADCDAT,     //audio
+		record,         //control
+		stop,			//control
+		addr_to_sram,   //sram
+		data_to_sram,   //sram
+		write           //sram
+	);
+
+	Display d1(
+		.inTime(SRAM_ADDR[17:13]),
+		.inRate(ratio),
+		.IS_SLOW(IS_SLOW_SW),
+		.IS_RECORD(RECORD_SW),
+		.IS_PAUSE(pause),
+
+		.SEVEN10(HEX6),
+		.SEVEN1(HEX5),
+		.PAUSE(HEX4),
+		.REC(HEX3),
+		.SLOW(HEX2),
+		.NOT_USED(HEX1),
+		.INTERP(HEX0)
+	);
+
 endmodule

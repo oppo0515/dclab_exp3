@@ -1,4 +1,4 @@
-module codec(
+module Codec(
 	AUD_BCLK,       //audio
 	AUD_DACLRCK,    //audio
 	AUD_DACDAT,     //audio
