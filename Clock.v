@@ -1,6 +1,6 @@
 module Clock(
 	CLK50,
-	ratio,
+	ratio_m1, //ratio minus 1
 	isNormalSpeed,
 	isSlow,
 	interp,

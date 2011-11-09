@@ -69,7 +69,7 @@ module Main(
 
 	Clock c1(
 		.CLK50(CLK50),
-		.ratio(RATIO_SW),
+		.ratio_m1(RATIO_SW),
 		.isNormalSpeed(NORMAL_SPEED_SW),
 		.isSlow(IS_SLOW_SW),
 		.interp(INTERP_SW),
@@ -114,4 +114,10 @@ module Main(
 		.INTERP(HEX0)
 	);
 
+	i2c i1(
+		I2C_SCLK(I2C_SCLK),
+		I2C_SDAT(I2C_SDAT),
+		clk(CLK50),
+		reset(RESET_KEY)
+	);
 endmodule
