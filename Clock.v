@@ -9,7 +9,7 @@ module Clock(
 	clkOut
 );
 	input CLK50;
-	input [2:0] ratio;
+	input [2:0] ratio_m1;
 	input isNormalSpeed;
 	input interp;
 	input isRecord;
@@ -33,7 +33,7 @@ module Clock(
 	assign clkOut = clkOut_tmp | pause;
 
 	always @(*) begin
-		if (counter2 == ratio) begin
+		if (counter2 == ratio_m1) begin
 			counter2_next = 3'b0;
 			slowClock_next = ~slowClock;
 		end else begin

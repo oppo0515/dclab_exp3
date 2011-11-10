@@ -7,21 +7,25 @@ module Main(
 	INTERP_SW,
 	NORMAL_SPEED_SW,
 	IS_SLOW_SW,
-	ADCLRCK,
-	ADCDAT,
-	DACLRCK,
-	BCLK,
-	MCLK,
+	RESET_KEY,
+
+	AUD_ADCLRCK,
+	AUD_DACLRCK,
+	AUD_ADCDAT,
+	AUD_DACDAT,
+	AUD_BCLK,
+	AUD_XCK,
+	GPIO,
 	I2C_SCLK,
 	I2C_SDAT,
-	DACDAT,
+
 	SRAM_ADDR,
 	SRAM_WE,
 	SRAM_OE,
 	SRAM_UB,
 	SRAM_LB,
 	SRAM_CE,
-	SRAM_DATA,
+	SRAM_DQ,
 	// seven seg.
 	HEX0,
 	HEX1,
@@ -29,7 +33,9 @@ module Main(
 	HEX3,
 	HEX4,
 	HEX5,
-	HEX6
+	HEX6,
+	HEX7,
+	stop
 );
 	input CLK50;
 	input PAUSE_KEY;
@@ -39,32 +45,48 @@ module Main(
 	input INTERP_SW;
 	input IS_SLOW_SW;
 	input NORMAL_SPEED_SW;
-	input ADCLRCK;
-	input ADCDAT;
-	input DACLRCK;
-	input BCLK;
+	input RESET_KEY;
+	input AUD_ADCLRCK;
+	input AUD_ADCDAT;
+	input AUD_DACLRCK;
+	input AUD_BCLK;
 
-	output MCLK;
+	output AUD_XCK;
+	output [35:0] GPIO;
 	output I2C_SCLK;
 	output I2C_SDAT;
-	output DACDAT;
+	output AUD_DACDAT;
 	output [17:0] SRAM_ADDR;
 	output SRAM_WE;
 	output SRAM_OE;
 	output SRAM_UB;
 	output SRAM_LB;
 	output SRAM_CE;
-	output [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6;
+	output [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6, HEX7;
+	output stop;
 
-	inout [15:0] SRAM_DATA;
+	inout [15:0] SRAM_DQ;
 
-	wire pause;
-	wire ratio = (NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
+	wire pause, stop, reset;
+	wire [17:0] address;
+	wire [3:0] ratio = (NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
 
 	State s1(
 		.CLK50(CLK50),
 		.KEY(PAUSE_KEY),
 		.state(pause)
+	);
+
+	State s2(
+		.CLK50(CLK50),
+		.KEY(STOP_KEY),
+		.state(stop)
+	);
+
+	Debounce db1(
+		.CLK50(CLK50),
+		.KEY(RESET_KEY),
+		.negEdge(reset)
 	);
 
 	Clock c1(
@@ -75,49 +97,63 @@ module Main(
 		.interp(INTERP_SW),
 		.pause(pause),
 		.isRecord(RECORD_SW),
-		.clkOut(MCLK)
+		.clkOut(AUD_XCK)
 	);
+	assign GPIO[0] = ~(~I2C_SDAT);
+	assign GPIO[1] = ~(~I2C_SCLK);
+	assign GPIO[2] = ~(~reset);
+	assign GPIO[4] = ~(~AUD_XCK);
+	assign GPIO[3] = ~(~AUD_BCLK);
 
 	Codec cd1(
-		// TODO
-		AUD_BCLK,       //audio
-		AUD_DACLRCK,    //audio
-		AUD_DACDAT,     //audio
-		fast,           //control
-		rate,           //control
-		stop,			//control
-		addr_fr_sram,   //sram
-		data_fr_sram,   //sram
-		read,           //sram
-		AUD_ADCLRCK,    //audio
-		AUD_ADCDAT,     //audio
-		record,         //control
-		stop,			//control
-		addr_to_sram,   //sram
-		data_to_sram,   //sram
-		write           //sram
+		.AUD_BCLK(AUD_BCLK),
+		.AUD_DACLRCK(AUD_DACLRCK),
+		.AUD_DACDAT(AUD_DACDAT),
+		.fast(!(IS_SLOW_SW|NORMAL_SPEED_SW)),
+		.rate(ratio),
+		.stop(stop),
+		.addr_fr_sram(),
+		.data_fr_sram(),
+		.read(),
+		.AUD_ADCLRCK(AUD_ADCLRCK),
+		.AUD_ADCDAT(AUD_ADCDAT),
+		.record(RECORD_SW),
+		.addr_to_sram(),
+		.data_to_sram(),
+		.write(),
+		.address(address)
 	);
 
 	Display d1(
-		.inTime(SRAM_ADDR[17:13]),
+		.inTime(address[17:13]),
 		.inRate(ratio),
 		.IS_SLOW(IS_SLOW_SW),
 		.IS_RECORD(RECORD_SW),
 		.IS_PAUSE(pause),
+		.INTERP_MODE(),
+		.IS_NORMAL_SPEED(),
 
-		.SEVEN10(HEX6),
-		.SEVEN1(HEX5),
-		.PAUSE(HEX4),
-		.REC(HEX3),
-		.SLOW(HEX2),
+		.SEVEN10(HEX7),
+		.SEVEN1(HEX6),
+		.PAUSE(HEX5),
+		.REC(HEX4),
+		.SLOW(HEX3),
+		.RATIO(HEX2),
 		.NOT_USED(HEX1),
 		.INTERP(HEX0)
 	);
 
 	i2c i1(
-		I2C_SCLK(I2C_SCLK),
-		I2C_SDAT(I2C_SDAT),
-		clk(CLK50),
-		reset(RESET_KEY)
+		.I2C_SCLK(I2C_SCLK),
+		.I2C_SDAT(I2C_SDAT),
+		.clk(CLK50),
+		.reset(reset)
 	);
+
+/*	i2c i1(
+		.i2c_clk(I2C_SCLK),
+		.i2c_dat(I2C_SDAT),
+		.clk(CLK50),
+		.reset(RESET_SW)
+	);*/
 endmodule

@@ -13,16 +13,18 @@ module Codec(
 	AUD_ADCDAT,     //audio
 	addr_to_sram,   //sram
 	data_to_sram,   //sram
-	write           //sram
+	write,          //sram
+	address
 );
 
 	input			AUD_BCLK, AUD_DACLRCK;
 	output			AUD_DACDAT;
 	input			record, stop, fast;
-	input	[2:0]	rate;
+	input	[3:0]	rate;
 	output	[17:0]	addr_fr_sram;
 	input	[15:0]	data_fr_sram;
 	output			read;
+	output	[17:0]	address;
 	
 	input			AUD_ADCLRCK, AUD_ADCDAT;
 	output	[17:0]	addr_to_sram;
@@ -38,7 +40,9 @@ module Codec(
 	reg	[17:0]	addr_fr_sram;
 	reg	[15:0]	data_read, data_read_next;
 	reg			DACLRCK_prev, read;
-
+	
+	assign address = addr;
+	
 	always @(*) begin
 		addr_next = addr;
 		data_write_next = data_write;
@@ -49,27 +53,27 @@ module Codec(
 		data_read_next = data_read;
 		read = 1'b0;
 		addr_fr_sram = 18'bzzzzzzzzzzzzzzzzzz;
+		AUD_DACDAT = 1'b0;
 		if (stop) begin              // control for stop
 			addr_next = 18'b0;
-			data_write_next = 18'b0;
+			data_write_next = 16'b0;
 			counter_next = 5'b0;
-			data_read_next = 18'b0;
+			data_read_next = 16'b0;
 		end else if (record) begin// record  mode -- four-state ADCLRCK 0-1 1-1 (1-0 0-0)
 			if(ADCLRCK_prev == 1'b0 && AUD_ADCLRCK == 1'b1) begin
 				if(&addr)begin                  //first data of sram will be empty
 					addr_next = addr;          //and after the last data of sram ,the recording will be stoped***shoulb be fixed!
-					//stop_out = 1'b1;
 				end else begin
 					addr_next = addr + 18'b1;
 				end
-				data_write_next = 18'b0;
+				data_write_next = 16'b0;
 				counter_next = 5'b0;
 			end else if(ADCLRCK_prev == 1'b1 && AUD_ADCLRCK == 1'b1) begin
 				if (counter[4] == 1)
 					counter_next = counter + 5'b1;
 				else begin
 					counter_next = counter;
-					data_write_next[counter] = AUD_ADCDAT; //maybe have compile error
+					data_write_next[counter[3:0]] = AUD_ADCDAT; //maybe have compile error
 				end
 			end else begin //output for sram
 				if (counter[4] == 1) begin
@@ -84,27 +88,16 @@ module Codec(
 				addr_fr_sram = addr;
 				data_read_next = data_fr_sram;
 				counter_next = 5'b0;
-				if (!fast) begin
-					if(&addr)begin                  //first data of sram will be empty
-						addr_next = addr;           //and after the last data of sram ,the recording will be stoped***shoulb be fixed!
-						//stop_out = 1'b1;
-					end else begin
-						addr_next = addr + 18'b1;
+				if (fast) begin
+					addr_next = addr + {14'b0, rate};
+					if (addr[17] && (!addr_next[17])) begin
+						addr_next = 18'b11_1111_1111_1111_1111;
 					end
 				end else begin
-					if (rate == 0 ) begin
-						if (&addr) begin
-							addr_next = addr;          //***shoulb be fixed!
-							//stop_out = 1'b1;
-						end else begin
-							addr_next = addr + 18'b1;
-						end
+					if(&addr)begin                  //first data of sram will be empty
+						addr_next = addr;           //and after the last data of sram ,the recording will be stoped***shoulb be fixed!
 					end else begin
-						addr_next = addr + {15'b1, rate};
-						if (addr[17] && (!addr_next[17])) begin
-							addr_next = 18'b11_1111_1111_1111_1111;
-							//stop_out = 1'b1;
-						end
+						addr_next = addr + 18'b1;
 					end
 				end
 			end else if(DACLRCK_prev == 1'b0 && AUD_DACLRCK == 1'b0) begin
