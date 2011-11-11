@@ -135,7 +135,7 @@ module Main(
 		.IS_SLOW(IS_SLOW_SW),
 		.IS_RECORD(RECORD_SW),
 		.IS_PAUSE(pause),
-		.INTERP_MODE(),
+		.INTERP_MODE(INTERP_SW),
 		.IS_NORMAL_SPEED(),
 
 		.SEVEN10(HEX7),

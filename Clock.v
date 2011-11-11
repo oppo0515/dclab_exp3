@@ -24,10 +24,10 @@ module Clock(
 
 	always @(posedge CLK50) begin
 		counter <= counter + 2'b1;
-		if (isSlow | isNormalSpeed | isRecord | ~interp) begin
-			clkOut_tmp = counter[1];
-		end else begin
+		if (isSlow & ~isNormalSpeed & ~isRecord & interp) begin
 			clkOut_tmp = slowClock;
+		end else begin
+			clkOut_tmp = counter[1];
 		end
 	end
 	assign clkOut = clkOut_tmp | pause;
