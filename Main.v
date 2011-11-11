@@ -70,6 +70,11 @@ module Main(
 	wire pause, stop, reset;
 	wire [17:0] address;
 	wire [3:0] ratio = (NORMAL_SPEED_SW? 3'h1: RATIO_SW + 3'h1);
+	reg [5:0] counter;
+	wire CLK_400K = counter[5];
+	always @(posedge CLK50) begin
+		counter = counter + 6'b1;
+	end
 
 	State s1(
 		.CLK50(CLK50),
@@ -84,7 +89,7 @@ module Main(
 	);
 
 	Debounce db1(
-		.CLK50(CLK50),
+		.CLK50(CLK_400K),
 		.KEY(RESET_KEY),
 		.negEdge(reset)
 	);
@@ -146,14 +151,14 @@ module Main(
 	i2c i1(
 		.I2C_SCLK(I2C_SCLK),
 		.I2C_SDAT(I2C_SDAT),
-		.clk(CLK50),
+		.clk(CLK_400K),
 		.reset(reset)
 	);
 
-/*	i2c i1(
+	/*i2c i1(
 		.i2c_clk(I2C_SCLK),
 		.i2c_dat(I2C_SDAT),
-		.clk(CLK50),
-		.reset(RESET_SW)
+		.clk(CLK_400K),
+		.reset(reset)
 	);*/
 endmodule
