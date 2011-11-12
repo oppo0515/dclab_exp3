@@ -35,7 +35,8 @@ module Main(
 	HEX5,
 	HEX6,
 	HEX7,
-	stop
+	stop,
+	DEBUG_SW
 );
 	input CLK50;
 	input PAUSE_KEY;
@@ -50,6 +51,7 @@ module Main(
 	input AUD_ADCDAT;
 	input AUD_DACLRCK;
 	input AUD_BCLK;
+	input DEBUG_SW;
 
 	output AUD_XCK;
 	output [35:0] GPIO;
@@ -107,8 +109,15 @@ module Main(
 	assign GPIO[0] = ~(~I2C_SDAT);
 	assign GPIO[1] = ~(~I2C_SCLK);
 	assign GPIO[2] = ~(~reset);
-	assign GPIO[4] = ~(~AUD_XCK);
 	assign GPIO[3] = ~(~AUD_BCLK);
+	assign GPIO[4] = ~(~AUD_XCK);
+	assign GPIO[5] = ~(~AUD_ADCLRCK);
+	assign GPIO[6] = ~(~AUD_DACLRCK);
+	assign GPIO[22:7] = (DEBUG_SW? data_fr_sram: data_to_sram);
+	assign GPIO[23] = ~(~AUD_DACDAT);
+	assign GPIO[24] = ~(~AUD_ADCDAT);
+	assign GPIO[30] = ~(~SRAM_OE);
+	assign GPIO[31] = ~(~SRAM_WE);
 
 	wire write, read;
 	wire [17:0] addr_fr_sram, addr_to_sram;
@@ -129,7 +138,8 @@ module Main(
 		.addr_to_sram(addr_to_sram),
 		.data_to_sram(data_to_sram),
 		.write(write),
-		.address(address)
+		.address(address),
+		.counter(GPIO[29:25])
 	);
 
 	Display d1(
@@ -160,12 +170,12 @@ module Main(
 
 	Sram2Codec sc1(
 		.dataStream(SRAM_DQ),
-		.dataOut(addr_fr_sram),
-		.dataIn(addr_to_sram),
+		.dataR(data_fr_sram),
+		.dataW(data_to_sram),
 		.addrIn(address),
 		.write(write),
 		.read(read),
-		.on(write|read),
+		.on(1),
 		.clk(AUD_BCLK),
 		._WE(SRAM_WE),
 		._CE(SRAM_CE),

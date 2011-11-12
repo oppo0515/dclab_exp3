@@ -19,14 +19,13 @@ module i2c(
 	assign data[0] = 29'b0;
 	assign data[1] = 29'b000110100_0_00011110_0_00000000_00; // reset
 	assign data[2] = 29'b000110100_0_00001100_0_00000000_00; // power
-	assign data[3] = 29'b000110100_0_00001000_0_00000110_00; // analog audio path control //fix**
+	assign data[3] = 29'b000110100_0_00001000_0_00010101_00; // analog audio path control //fix**
 	assign data[4] = 29'b000110100_0_00010000_0_00001100_00; // sample rate
-	assign data[5] = 29'b000110100_0_00001110_0_01000010_00; // master mode
+	assign data[5] = 29'b000110100_0_00001110_0_01010010_00; // master mode
 	assign data[6] = 29'b000110100_0_00000100_0_01111001_00; // left headphone
 	assign data[7] = 29'b000110100_0_00000110_0_01111001_00; // right headphone
-	assign data[8] = 29'b000110100_0_00001010_0_00001000_00; // digital audio path control //fix**
+	assign data[8] = 29'b000110100_0_00001010_0_00000000_00; // digital audio path control //fix**
 	assign data[9] = 29'b000110100_0_00010010_0_00000001_00; // active
-
 
 	always @(*) begin
 		send_next = send;

@@ -15,9 +15,10 @@ module Codec(
 	addr_to_sram,   //sram
 	data_to_sram,   //sram
 	write,          //sram
-	address
+	address,
+	counter
 );
-
+	output [4:0] counter;
 	input  AUD_BCLK, AUD_DACLRCK, AUD_ADCLRCK, AUD_ADCDAT;
 	input  interp, record, stop, fast;
 	input [3:0] rate;
@@ -69,11 +70,11 @@ module Codec(
 				data_write_next = 16'b0;
 				counter_next = 5'b0;
 			end else if(ADCLRCK_prev == 1'b1 && AUD_ADCLRCK == 1'b1) begin
-				if (counter[4] == 1)
-					counter_next = counter + 5'b1;
-				else begin
+				if (counter[4] == 1) begin
 					counter_next = counter;
+				end else begin
 					data_write_next[counter[3:0]] = AUD_ADCDAT; //maybe have compile error
+					counter_next = counter + 5'b1;
 				end
 			end else begin //output for sram
 				if (counter[4] == 1) begin
@@ -102,20 +103,20 @@ module Codec(
 				end
 			end else if(DACLRCK_prev == 1'b0 && AUD_DACLRCK == 1'b0) begin
 				if (counter[4] == 1) begin
-					counter_next = counter + 5'b1;
+					counter_next = counter;
 					AUD_DACDAT = 1'b0;
 				end else begin
-					counter_next = counter;
+					counter_next = counter + 5'b1;
 					AUD_DACDAT = data_read[counter]; //maybe have compile error
 				end
 			end else if(DACLRCK_prev == 1'b0 && AUD_DACLRCK == 1'b1) begin
 				counter_next = 5'b0;
 			end else begin
 				if (counter[4] == 1) begin
-					counter_next = counter + 5'b1;
+					counter_next = counter;
 					AUD_DACDAT = 1'b0;
 				end else begin
-					counter_next = counter;
+					counter_next = counter + 5'b1;
 					AUD_DACDAT = data_read[counter]; //maybe have compile error
 				end
 			end		
