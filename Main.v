@@ -110,6 +110,9 @@ module Main(
 	assign GPIO[4] = ~(~AUD_XCK);
 	assign GPIO[3] = ~(~AUD_BCLK);
 
+	wire write, read;
+	wire [17:0] addr_fr_sram, addr_to_sram;
+	wire [15:0] data_fr_sram, data_to_sram;
 	Codec cd1(
 		.AUD_BCLK(AUD_BCLK),
 		.AUD_DACLRCK(AUD_DACLRCK),
@@ -117,15 +120,15 @@ module Main(
 		.fast(!(IS_SLOW_SW|NORMAL_SPEED_SW)),
 		.rate(ratio),
 		.stop(stop),
-		.addr_fr_sram(),
-		.data_fr_sram(),
-		.read(),
+		.addr_fr_sram(addr_fr_sram),
+		.data_fr_sram(data_fr_sram),
+		.read(read),
 		.AUD_ADCLRCK(AUD_ADCLRCK),
 		.AUD_ADCDAT(AUD_ADCDAT),
 		.record(RECORD_SW),
-		.addr_to_sram(),
-		.data_to_sram(),
-		.write(),
+		.addr_to_sram(addr_to_sram),
+		.data_to_sram(data_to_sram),
+		.write(write),
 		.address(address)
 	);
 
@@ -155,10 +158,20 @@ module Main(
 		.reset(reset)
 	);
 
-	/*i2c i1(
-		.i2c_clk(I2C_SCLK),
-		.i2c_dat(I2C_SDAT),
-		.clk(CLK_400K),
-		.reset(reset)
-	);*/
+	Sram2Codec sc1(
+		.dataStream(SRAM_DQ),
+		.dataOut(addr_fr_sram),
+		.dataIn(addr_to_sram),
+		.addrIn(address),
+		.write(write),
+		.read(read),
+		.on(write|read),
+		.clk(AUD_BCLK),
+		._WE(SRAM_WE),
+		._CE(SRAM_CE),
+		._OE(SRAM_OE),
+		._LB(SRAM_LB),
+		._UB(SRAM_UB),
+		._Addr(SRAM_ADDR)
+	);
 endmodule

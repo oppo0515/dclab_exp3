@@ -6,6 +6,7 @@ module Codec(
 	rate,           //control
 	stop,			//control
 	record,         //control
+	interp,         //control
 	addr_fr_sram,   //sram
 	data_fr_sram,   //sram
 	read,           //sram
@@ -17,22 +18,21 @@ module Codec(
 	address
 );
 
-	input			AUD_BCLK, AUD_DACLRCK;
-	output			AUD_DACDAT;
-	input			record, stop, fast;
-	input	[3:0]	rate;
-	output	[17:0]	addr_fr_sram;
-	input	[15:0]	data_fr_sram;
-	output			read;
-	output	[17:0]	address;
-	
-	input			AUD_ADCLRCK, AUD_ADCDAT;
-	output	[17:0]	addr_to_sram;
-	output	[15:0]	data_to_sram;
-	output			write; //stop_out
+	input  AUD_BCLK, AUD_DACLRCK, AUD_ADCLRCK, AUD_ADCDAT;
+	input  interp, record, stop, fast;
+	input [3:0] rate;
+	input [15:0] data_fr_sram;
+	output read;
+	output [17:0] address;
+
+	output [17:0] addr_fr_sram;
+	output AUD_DACDAT;
+	output [17:0] addr_to_sram;
+	output [15:0] data_to_sram;
+	output write;
 	
 	reg 		AUD_DACDAT;
-	reg	[17:0]	addr,addr_next, addr_to_sram;
+	reg	[17:0]	addr, addr_next, addr_to_sram;
 	reg [15:0]	data_write, data_write_next, data_to_sram;
 	reg [4:0]	counter, counter_next;
 	reg 		ADCLRCK_prev, write;
@@ -46,14 +46,14 @@ module Codec(
 	always @(*) begin
 		addr_next = addr;
 		data_write_next = data_write;
-		counter_next = counter;
-		write = 1'b0;
-		addr_to_sram = 18'bzzzzzzzzzzzzzzzzzz;
-		data_to_sram = 16'bzzzzzzzzzzzzzzzz;
 		data_read_next = data_read;
 		read = 1'b0;
-		addr_fr_sram = 18'bzzzzzzzzzzzzzzzzzz;
+		write = 1'b0;
+		addr_to_sram = 18'bxxxxxxxxxxxxxxxxxx;
+		data_to_sram = 16'bxxxxxxxxxxxxxxxx;
+		addr_fr_sram = 18'bxxxxxxxxxxxxxxxxxx;
 		AUD_DACDAT = 1'b0;
+		counter_next = counter;
 		if (stop) begin              // control for stop
 			addr_next = 18'b0;
 			data_write_next = 16'b0;
@@ -61,8 +61,8 @@ module Codec(
 			data_read_next = 16'b0;
 		end else if (record) begin// record  mode -- four-state ADCLRCK 0-1 1-1 (1-0 0-0)
 			if(ADCLRCK_prev == 1'b0 && AUD_ADCLRCK == 1'b1) begin
-				if(&addr)begin                  //first data of sram will be empty
-					addr_next = addr;          //and after the last data of sram ,the recording will be stoped***shoulb be fixed!
+				if (&addr) begin              //first data of sram will be empty
+					addr_next = addr;          //and after the last data of sram
 				end else begin
 					addr_next = addr + 18'b1;
 				end
@@ -94,8 +94,8 @@ module Codec(
 						addr_next = 18'b11_1111_1111_1111_1111;
 					end
 				end else begin
-					if(&addr)begin                  //first data of sram will be empty
-						addr_next = addr;           //and after the last data of sram ,the recording will be stoped***shoulb be fixed!
+					if (&addr) begin         //first data of sram will be empty
+						addr_next = addr;     //and after the last data of sram ,the recording will be stoped
 					end else begin
 						addr_next = addr + 18'b1;
 					end
@@ -121,7 +121,6 @@ module Codec(
 			end		
 		end
 	end
-	
 	
 	always@(posedge AUD_BCLK)begin
 		ADCLRCK_prev <= AUD_ADCLRCK;
