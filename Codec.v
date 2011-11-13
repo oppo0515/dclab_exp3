@@ -41,6 +41,7 @@ module Codec(
 	reg	[17:0]	addr_fr_sram;
 	reg	[15:0]	data_read, data_read_next;
 	reg			DACLRCK_prev, read;
+	reg [3:0]	counter_interp, counter_interp_next;
 	
 	assign address = addr;
 	
@@ -55,10 +56,12 @@ module Codec(
 		addr_fr_sram = 18'bxxxxxxxxxxxxxxxxxx;
 		AUD_DACDAT = 1'b0;
 		counter_next = counter;
+		counter_interp_next = counter_interp;
 		if (stop) begin              // control for stop
 			addr_next = 18'b0;
 			data_write_next = 16'b0;
 			counter_next = 5'b0;
+			counter_interp_next = 4'b0;
 			data_read_next = 16'b0;
 		end else if (record) begin// record  mode -- four-state ADCLRCK 0-1 1-1 (1-0 0-0)
 			if(ADCLRCK_prev == 1'b0 && AUD_ADCLRCK == 1'b1) begin
@@ -89,7 +92,18 @@ module Codec(
 				addr_fr_sram = addr;
 				data_read_next = data_fr_sram;
 				counter_next = 5'b0;
-				if (fast) begin
+				if (~(fast || interp))begin // 零次內插
+					counter_interp_next = counter_interp + 4'b1;
+					if (counter_interp_next == rate)begin
+						if(&addr)
+							addr_next = addr;
+						else
+							addr_next = addr + 18'b1;
+						counter_interp_next == 4'b0;
+					end else begin
+						addr_next = addr;
+					end
+				end	else if (fast) begin // fast && 一次內插
 					addr_next = addr + {14'b0, rate};
 					if (addr[17] && (!addr_next[17])) begin
 						addr_next = 18'b11_1111_1111_1111_1111;
@@ -130,6 +144,7 @@ module Codec(
 		addr <= addr_next;
 		data_read <= data_read_next;
 		counter <= counter_next;
+		counter_interp <= counter_interp_next;
 	end
 
 endmodule
